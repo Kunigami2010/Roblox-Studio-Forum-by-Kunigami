@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sobre Mí</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+            background: #f2f2f2;
+            color: #333;
+        }
+        nav {
+            background: #ff7043;
+            color: white;
+            padding: 15px;
+            border-radius: 15px;
+        }
+        nav a {
+            color: white;
+            margin: 0 15px;
+            text-decoration: none;
+        }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        input, textarea {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 10px;
+            border: 1px solid #ff7043;
+        }
+        button {
+            padding: 10px 20px;
+            background: #ff7043;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+        .forum {
+            margin-top: 30px;
+        }
+        .message {
+            background: #ffebee;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 10px;
+            text-align: left;
+            position: relative;
+        }
+        .reply {
+            margin-left: 20px;
+            background: #ffe0b2;
+            padding: 5px;
+            border-radius: 10px;
+        }
+        .delete-btn {
+            position: absolute;
+            top: 5px;
+            right: 10px;
+            background: red;
+            color: white;
+            border: none;
+            padding: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #game {
+            margin-top: 20px;
+            padding: 20px;
+            background: #fff;
+            border-radius: 15px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #discord {
+            text-decoration: underline;
+            color: #ff7043;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="#sobre-mi">Sobre Mí</a>
+        <a href="#contacto">Contacto</a>
+        <a href="#foro">Foro</a>
+    </nav>
+    
+    <div class="container" id="sobre-mi">
+        <h1>Sobre Mí</h1>
+        <p id="bio">Hola, soy [Tu Nombre]. Me apasiona la tecnología y el desarrollo web.</p>
+        <textarea id="editBio" placeholder="Escribe tu biografía aquí..."></textarea>
+        <button onclick="updateBio()">Actualizar</button>
+    </div>
+    
+    <div class="container" id="contacto">
+        <h2>Contacto</h2>
+        <p>Discord: <span id="discord">supreme_2010</span></p>
+    </div>
+    
+    <div class="container forum" id="foro">
+        <h2>Foro</h2>
+        <textarea id="newMessage" placeholder="Escribe tu mensaje..."></textarea>
+        <button onclick="postMessage()">Publicar</button>
+        <div id="messages"></div>
+    </div>
+    
+    <div class="container" id="game">
+        <h2>Minijuego AFK</h2>
+        <p>Presiona el botón para ganar puntos mientras estás AFK.</p>
+        <p>Puntos: <span id="score">0</span></p>
+        <button onclick="startAFKGame()">Comenzar</button>
+        <button onclick="claimReward()">Reclamar Recompensa</button>
+    </div>
+    
+    <script src="https://cdn.emailjs.com/dist/email.min.js"></script>
+    <script>
+        emailjs.init("user_your_user_id_here"); // Reemplaza con tu user_id de EmailJS
+        
+        function updateBio() {
+            let newBio = document.getElementById("editBio").value;
+            if (newBio.trim() !== "") {
+                document.getElementById("bio").textContent = newBio;
+                localStorage.setItem("bio", newBio);
+            }
+        }
+        
+        function postMessage() {
+            let messageContent = document.getElementById("newMessage").value;
+            messageContent = correctText(messageContent); // Aplicar corrector de texto
+            if (messageContent.trim() !== "") {
+                let messages = JSON.parse(localStorage.getItem("messages")) || [];
+                messages.push({ text: messageContent, replies: [] });
+                localStorage.setItem("messages", JSON.stringify(messages));
+                renderMessages();
+                document.getElementById("newMessage").value = "";
+            }
+        }
+        
+        function correctText(text) {
+            // Función básica de corrección de palabras (esto es solo un ejemplo)
+            const commonMistakes = { "tecnoligia": "tecnología", "desarollo": "desarrollo" };
+            for (const mistake in commonMistakes) {
+                text = text.replace(new RegExp(mistake, 'g'), commonMistakes[mistake]);
+            }
+            return text;
+        }
+        
+        function renderMessages() {
+            let messagesContainer = document.getElementById("messages");
+            messagesContainer.innerHTML = "";
+            let messages = JSON.parse(localStorage.getItem("messages")) || [];
+            messages.forEach((msg, index) => {
+                let messageDiv = document.createElement("div");
+                messageDiv.className = "message";
+                messageDiv.innerHTML = msg.text + ` <button class="delete-btn" onclick="deleteMessage(${index})">X</button>`;
+                msg.replies.forEach(reply => {
+                    let replyDiv = document.createElement("div");
+                    replyDiv.className = "reply";
+                    replyDiv.textContent = reply;
+                    messageDiv.appendChild(replyDiv);
+                });
+                messagesContainer.appendChild(messageDiv);
+            });
+        }
+        
+        let gameInterval;
+        let score = 0;
+        
+        function startAFKGame() {
+            gameInterval = setInterval(() => {
+                score++;
+                document.getElementById("score").textContent = score;
+            }, 1000);
+        }
+        
+        function claimReward() {
+            const emailSubject = "Recompensa Reclamada";
+            const emailBody = `¡Alguien ha reclamado una recompensa en el minijuego! Puntos ganados: ${score}`;
+            
+            emailjs.send("service_your_service_id", "template_your_template_id", {
+                to_email: "cristiankhomiak23@gmail.com",
+                subject: emailSubject,
+                message: emailBody
+            }).then(function(response) {
+                alert("Recompensa reclamada, ¡revisa tu correo!");
+            }, function(error) {
+                alert("Error al enviar el correo.");
+            });
+
+            clearInterval(gameInterval);
+            score = 0;
+            document.getElementById("score").textContent = score;
+        }
+        
+        function trackUser() {
+            fetch('https://api.ipify.org?format=json')
+                .then(response => response.json())
+                .then(data => {
+                    const ip = data.ip;
+                    const emailSubject = "Nuevo Usuario Conectado";
+                    const emailBody = `Un nuevo usuario se ha conectado. Dirección IP: ${ip}`;
+                    emailjs.send("service_your_service_id", "template_your_template_id", {
+                        to_email: "cristiankhomiak23@gmail.com",
+                        subject: emailSubject,
+                        message: emailBody
+                    });
+                });
+        }
+
+        window.onload = function() {
+            trackUser();
+            if (localStorage.getItem("bio")) {
+                document.getElementById("bio").textContent = localStorage.getItem("bio");
+            }
+            renderMessages();
+        }
+    </script>
+</body>
+</html>
